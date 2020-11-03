@@ -1,0 +1,41 @@
+package observed
+
+//go:generate go run ./main/make_observed.go -type=A -package=observed -output=a_observed.go
+
+import (
+	"fmt"
+	"testing"
+	"time"
+)
+
+type A struct {
+	Message string
+}
+
+func TestObserved(t *testing.T) {
+	f := func(c chan *A, name string) {
+		for {
+			v := <-c
+			if v == nil {
+				// channel closed
+				return
+			}
+			fmt.Println(name, ":", v.Message)
+		}
+	}
+	o := NewObservedA()
+	c1 := make(chan *A)
+	defer close(c1)
+	o.Subscribe(c1)
+	c2 := make(chan *A)
+	defer close(c2)
+	o.Subscribe(c2)
+	go f(c1, "first handler")
+	go f(c2, "second handler")
+	a := &A{Message: "ohai"}
+	b := &A{Message: "kthxbye"}
+	o.Notify(a)
+	time.Sleep(50 * time.Millisecond)
+	o.Notify(b)
+	time.Sleep(50 * time.Millisecond)
+}

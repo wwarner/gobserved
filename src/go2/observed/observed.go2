@@ -1,0 +1,35 @@
+package observed
+
+import (
+	"sync"
+)
+
+type Observed [V any]struct {
+	mu sync.Mutex
+	Subscribers map[chan <- *V]struct{}
+}
+
+func  NewObserved[V any]() (rval *Observed[V]) {
+	return &Observed[V]{
+        	mu: sync.Mutex{},
+		Subscribers: map[chan <- *V]struct{}{},
+	}
+}
+
+func (o *Observed[V]) Subscribe(c chan <- *V) {
+	defer o.mu.Unlock()
+        o.mu.Lock()
+	o.Subscribers[c] = struct{}{}
+}
+
+func (o *Observed[V]) Unsubscribe(c chan <- *V) {
+	defer o.mu.Unlock()
+        o.mu.Lock()
+        delete(o.Subscribers, c)
+}
+
+func (o *Observed[V]) Notify(v *V) {
+	for c,_:=range o.Subscribers {
+        	c <- v
+	}
+}
